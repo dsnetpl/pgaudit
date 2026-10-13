@@ -81,16 +81,16 @@ static int auditLogBitmap = LOG_NONE;
  * String constants for log classes - used when processing tokens in the
  * pgaudit.log GUC.
  */
-#define CLASS_DDL       "DDL"
-#define CLASS_FUNCTION  "FUNCTION"
-#define CLASS_MISC      "MISC"
-#define CLASS_MISC_SET  "MISC_SET"
-#define CLASS_READ      "READ"
-#define CLASS_ROLE      "ROLE"
-#define CLASS_WRITE     "WRITE"
+#define CLASS_DDL       "D"
+#define CLASS_FUNCTION  "F"
+#define CLASS_MISC      "M"
+#define CLASS_MISC_SET  "MS"
+#define CLASS_READ      "R"
+#define CLASS_ROLE      "RO"
+#define CLASS_WRITE     "W"
 
-#define CLASS_NONE      "NONE"
-#define CLASS_ALL       "ALL"
+#define CLASS_NONE      "N"
+#define CLASS_ALL       "A"
 
 /*
  * GUC variable for pgaudit.log_catalog
@@ -189,8 +189,8 @@ static char *auditRole = NULL;
 /*
  * Audit type, which is responsbile for the log message
  */
-#define AUDIT_TYPE_OBJECT   "OBJECT"
-#define AUDIT_TYPE_SESSION  "SESSION"
+#define AUDIT_TYPE_OBJECT   "O"
+#define AUDIT_TYPE_SESSION  "S"
 
 /*
  * Object type, used for SELECT/DML statements and function calls.
@@ -204,24 +204,24 @@ static char *auditRole = NULL;
  * This should be kept consistent with what is returned from
  * pg_event_trigger_ddl_commands(), as that's what we use for DDL.
  */
-#define OBJECT_TYPE_TABLE           "TABLE"
-#define OBJECT_TYPE_INDEX           "INDEX"
-#define OBJECT_TYPE_SEQUENCE        "SEQUENCE"
-#define OBJECT_TYPE_TOASTVALUE      "TOAST TABLE"
-#define OBJECT_TYPE_VIEW            "VIEW"
-#define OBJECT_TYPE_MATVIEW         "MATERIALIZED VIEW"
-#define OBJECT_TYPE_COMPOSITE_TYPE  "COMPOSITE TYPE"
-#define OBJECT_TYPE_FOREIGN_TABLE   "FOREIGN TABLE"
-#define OBJECT_TYPE_FUNCTION        "FUNCTION"
+#define OBJECT_TYPE_TABLE           "T"
+#define OBJECT_TYPE_INDEX           "I"
+#define OBJECT_TYPE_SEQUENCE        "S"
+#define OBJECT_TYPE_TOASTVALUE      "TT"
+#define OBJECT_TYPE_VIEW            "V"
+#define OBJECT_TYPE_MATVIEW         "MV"
+#define OBJECT_TYPE_COMPOSITE_TYPE  "CT"
+#define OBJECT_TYPE_FOREIGN_TABLE   "FT"
+#define OBJECT_TYPE_FUNCTION        "F"
 
-#define OBJECT_TYPE_UNKNOWN         "UNKNOWN"
+#define OBJECT_TYPE_UNKNOWN         "U"
 
 /*
  * String constants used for redacting text after the password token in
  * CREATE/ALTER ROLE commands.
  */
 #define TOKEN_PASSWORD             "password"
-#define TOKEN_REDACTED             "<REDACTED>"
+#define TOKEN_REDACTED             "<->"
 
 /*
  * An AuditEvent represents an operation that potentially affects a single
@@ -851,22 +851,22 @@ log_audit_event(AuditEventStackItem *stackItem)
             }
 
             if (numParams == 0)
-                appendStringInfoString(&auditStr, "<none>");
+                appendStringInfoString(&auditStr, "-");
             else
                 append_valid_csv(&auditStr, paramStrResult.data);
         }
         else
-            appendStringInfoString(&auditStr, "<not logged>");
+            appendStringInfoString(&auditStr, "-");
 
         stackItem->auditEvent.statementLogged = true;
     }
     /* we were asked to not log it */
     else if (!auditLogStatement)
         appendStringInfoString(&auditStr,
-                               "<not logged>,<not logged>");
+                               "-,-");
     else
         appendStringInfoString(&auditStr,
-                               "<previously logged>,<previously logged>");
+                               "-,-");
 
     /* Log rows affected */
     if (auditLogRows)
@@ -879,10 +879,7 @@ log_audit_event(AuditEventStackItem *stackItem)
      * pgaudit anyway.
      */
     ereport(auditLogClient ? auditLogLevel : LOG_SERVER_ONLY,
-            (errmsg("AUDIT: %s," INT64_FORMAT "," INT64_FORMAT ",%s,%s",
-                    stackItem->auditEvent.granted ?
-                    AUDIT_TYPE_OBJECT : AUDIT_TYPE_SESSION,
-                    stackItem->auditEvent.statementId,
+            (errmsg("AUDIT: " INT64_FORMAT ",%s,%s",
                     stackItem->auditEvent.substatementId,
                     className,
                     auditStr.data),
@@ -2265,7 +2262,7 @@ _PG_init(void)
 
         NULL,
         &auditLog,
-        "none",
+        "N",
         PGC_SUSET,
         GUC_LIST_INPUT | GUC_NOT_IN_SAMPLE,
         check_pgaudit_log,
